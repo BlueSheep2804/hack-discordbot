@@ -2,7 +2,7 @@ const dotenv = require('dotenv')
 
 dotenv.config()
 
-import { Interaction } from "discord.js"
+import { Interaction, MessageActionRow, MessageButton } from "discord.js"
 const { Client, Intents } = require('discord.js')
 const client = new Client({ intents: Object.keys(Intents.FLAGS) })
 
@@ -22,6 +22,16 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         return
     }
     if (interaction.commandName === 'gate') {
+        const btn_give = new MessageButton()
+            .setCustomId('btn_give')
+            .setStyle('PRIMARY')
+            .setEmoji('📥')
+            .setLabel('入室')
+        const btn_take = new MessageButton()
+            .setCustomId('btn_take')
+            .setStyle('SECONDARY')
+            .setEmoji('📤')
+            .setLabel('退出')
         interaction.channel?.send({
             embeds: [{
                 title: 'Fortnite',
@@ -39,7 +49,10 @@ client.on('interactionCreate', async (interaction: Interaction) => {
                 footer: {
                     text: 'Developer: Epic Games / Publisher: Epic Games'
                 }
-            }]
+            }],
+            components: [
+                new MessageActionRow().addComponents(btn_give).addComponents(btn_take)
+            ]
         })
         await interaction.reply({
             ephemeral: true,
