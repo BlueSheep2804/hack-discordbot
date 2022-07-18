@@ -18,6 +18,31 @@ client.once("ready", async () => {
 })
 
 client.on('interactionCreate', async (interaction: Interaction) => {
+    if (interaction.isButton()) {
+        switch (interaction.customId) {
+            case 'btn_give':
+                if (Array.isArray(interaction.member?.roles)) return
+                interaction.member?.roles.add('998167806623350785')
+                interaction.reply({
+                    content: ':inbox_tray: 入室しました',
+                    ephemeral: true
+                })
+                break
+            case 'btn_take':
+                if (Array.isArray(interaction.member?.roles)) return
+                interaction.member?.roles.remove('998167806623350785')
+                interaction.reply({
+                    content: ':outbox_tray: 退出しました',
+                    ephemeral: true
+                })
+                break
+            default:
+                interaction.reply({
+                    content: 'エラーが発生しました',
+                    ephemeral: true
+                })
+        }
+    }
     if (!interaction.isCommand()) {
         return
     }
