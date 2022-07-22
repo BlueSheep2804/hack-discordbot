@@ -12,11 +12,12 @@ const gateEmbeds: Record<string, Record<string, string>> = {}
 const gateRoles: Record<string, string> = {}
 
 client.once("ready", async () => {
-    fs.readdirSync('./src/embeds').filter(file => file.startsWith('gate_') && (file.endsWith('.js') || file.endsWith('.ts'))).forEach(async file => {
+    const gateFiles = fs.readdirSync('./src/embeds').filter(file => file.startsWith('gate_') && (file.endsWith('.js') || file.endsWith('.ts')))
+    for (const file of gateFiles) {
         const embed = await import(`./embeds/${file.split('.')[0]}`)
         gateEmbeds[file.split('.')[0]] = embed.gate
         gateRoles[file.split('.')[0]] = embed.role
-    })
+    }
 
     const data = [{
         name: 'gate',
