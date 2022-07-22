@@ -2,10 +2,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "node-terminal",
-            "request": "launch",
             "name": "Launch Bot",
-            "command": "yarn debug"
+            "request": "launch",
+            "runtimeArgs": [
+                "debug"
+            ],
+            "runtimeExecutable": "yarn",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
         }
     ]
 }
