@@ -49,46 +49,56 @@ client.once("ready", async () => {
 
 client.on('interactionCreate', async (interaction: Interaction) => {
     if (interaction.isButton()) {
-        switch (interaction.customId) {
-            case 'btn_give':
-                if (Array.isArray(interaction.member?.roles)) return
-                interaction.member?.roles.add('998167806623350785')
-                interaction.reply({
+        if (Array.isArray(interaction.member?.roles)) return
+        for (const i in gateRoles) {
+            if (`btn_${i}_give` === interaction.customId) {
+                await interaction.member?.roles.add(gateRoles[i])
+                await interaction.reply({
                     content: ':inbox_tray: 入室しました',
                     ephemeral: true
                 })
-                break
-            case 'btn_take':
-                if (Array.isArray(interaction.member?.roles)) return
-                interaction.member?.roles.remove('998167806623350785')
-                interaction.reply({
+                return
+            }
+            if (`btn_${i}_take` === interaction.customId) {
+                await interaction.member?.roles.remove(gateRoles[i])
+                await interaction.reply({
                     content: ':outbox_tray: 退出しました',
                     ephemeral: true
                 })
-                break
-            default:
-                interaction.reply({
-                    content: 'エラーが発生しました',
-                    ephemeral: true
-                })
+                return
+            }
         }
+        await interaction.reply({
+            content: 'エラーが発生しました',
+            ephemeral: true
+        })
+        return
     }
     if (!interaction.isCommand()) {
         return
     }
     if (interaction.commandName === 'gate') {
+        const gateName = interaction.options.getString('ゲート名')
+        if (!gateName) return
+        if (gateName in gateRoles) {
+            await interaction.reply({
+                ephemeral: true,
+                content: 'エラー: 無効なゲート名です'
+            })
+        }
+
         const btn_give = new MessageButton()
-            .setCustomId('btn_give')
+            .setCustomId(`btn_${gateName}_give`)
             .setStyle('PRIMARY')
             .setEmoji('📥')
             .setLabel('入室')
         const btn_take = new MessageButton()
-            .setCustomId('btn_take')
+            .setCustomId(`btn_${gateName}_take`)
             .setStyle('SECONDARY')
             .setEmoji('📤')
             .setLabel('退出')
-        interaction.channel?.send({
-            embeds: [gateEmbeds.gate_debug],
+        await interaction.channel?.send({
+            embeds: [gateEmbeds[gateName]],
             components: [
                 new MessageActionRow().addComponents(btn_give).addComponents(btn_take)
             ]
