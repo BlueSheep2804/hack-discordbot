@@ -19,9 +19,26 @@ client.once("ready", async () => {
         gateRoles[file.split('.')[0]] = embed.role
     }
 
+    const gates: Record<string, string>[] = []
+    for (const gateName in gateRoles) {
+        gates.push({
+            name: gateName,
+            value: gateName
+        })
+    }
+
     const data = [{
         name: 'gate',
-        description: 'チャンネルに入るためのゲートを作ります。管理者権限が必要です。'
+        description: 'チャンネルに入るためのゲートを作ります。管理者権限が必要です。',
+        options: [
+            {
+                type: 'STRING',
+                name: 'ゲート名',
+                description: '作成されるゲートを指定します',
+                required: true,
+                choices: gates
+            }
+        ]
     }]
     await client.application.commands.set(data, '844175560044445716')
 
