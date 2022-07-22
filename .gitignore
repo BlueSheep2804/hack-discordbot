@@ -225,4 +225,6 @@ dist
 *.vsix
 
 
-build/*
+/build/*
+/src/embeds/*
+!/src/embeds/gate_debug.ts
