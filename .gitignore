@@ -228,3 +228,4 @@ dist
 /build/*
 /src/embeds/*
 !/src/embeds/gate_debug.ts
+/db.sqlite3
