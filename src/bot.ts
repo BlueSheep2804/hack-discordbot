@@ -6,6 +6,9 @@ import * as fs from 'fs'
 
 import { Interaction, MessageActionRow, MessageButton } from "discord.js"
 const { Client, Intents } = require('discord.js')
+
+import { db_gate } from './db'
+
 const client = new Client({ intents: Object.keys(Intents.FLAGS) })
 
 const gateEmbeds: Record<string, Record<string, string>> = {}
@@ -98,12 +101,19 @@ client.on('interactionCreate', async (interaction: Interaction) => {
             .setStyle('SECONDARY')
             .setEmoji('📤')
             .setLabel('退出')
-        await interaction.channel?.send({
+        const gateEmbedMessage = await interaction.channel?.send({
             embeds: [gateEmbeds[gateName]],
             components: [
                 new MessageActionRow().addComponents(btn_give).addComponents(btn_take)
             ]
         })
+        await db_gate.set(
+            gateName,
+            {
+                message: gateEmbedMessage?.id,
+                channel: interaction.channelId
+            }
+        )
         await interaction.reply({
             ephemeral: true,
             content: '正常に投稿されました。'
