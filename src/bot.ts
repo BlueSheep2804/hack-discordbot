@@ -80,11 +80,12 @@ client.on('interactionCreate', async (interaction: Interaction) => {
     if (interaction.commandName === 'gate') {
         const gateName = interaction.options.getString('ゲート名')
         if (!gateName) return
-        if (gateName in gateRoles) {
+        if (!(gateName in gateRoles)) {
             await interaction.reply({
                 ephemeral: true,
                 content: 'エラー: 無効なゲート名です'
             })
+            return
         }
 
         const btn_give = new MessageButton()
