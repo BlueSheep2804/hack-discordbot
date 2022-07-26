@@ -91,6 +91,27 @@ client.on('interactionCreate', async (interaction: Interaction) => {
             return
         }
 
+        if (await db_gate.has(gateName)) {
+            const a = await db_gate.get(gateName);
+            const gateChannel = await interaction.guild?.channels.fetch(a.channel)
+            if (!gateChannel?.isText()) {
+                interaction.reply({
+                    ephemeral: true,
+                    content: 'エラー: 無効なチャンネル'
+                })
+                return
+            }
+            const gateMessage = await gateChannel?.messages.fetch(a.message);
+            await gateMessage.edit({
+                embeds: [gateEmbeds[gateName]]
+            })
+            await interaction.reply({
+                ephemeral: true,
+                content: '更新しました。'
+            })
+            return
+        }
+
         const btn_give = new MessageButton()
             .setCustomId(`btn_${gateName}_give`)
             .setStyle('PRIMARY')
