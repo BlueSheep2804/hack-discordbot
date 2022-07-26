@@ -4,7 +4,7 @@ dotenv.config()
 
 import * as fs from 'fs'
 
-import { Interaction, MessageActionRow, MessageButton } from "discord.js"
+import { DiscordAPIError, Interaction, MessageActionRow, MessageButton } from "discord.js"
 const { Client, Intents } = require('discord.js')
 
 import { db_gate } from './db'
@@ -93,7 +93,18 @@ client.on('interactionCreate', async (interaction: Interaction) => {
 
         if (await db_gate.has(gateName)) {
             const a = await db_gate.get(gateName);
-            const gateChannel = await interaction.guild?.channels.fetch(a.channel)
+            let gateChannel
+            try {
+                gateChannel = await interaction.guild?.channels.fetch(a.channel)
+            } catch (e) {
+                if (e instanceof DiscordAPIError && e.message === 'Unknown Channel') {
+                    interaction.reply({
+                        ephemeral: true,
+                        content: 'エラー: 無効なチャンネルID'
+                    })
+                    return
+                }
+            }
             if (!gateChannel?.isText()) {
                 interaction.reply({
                     ephemeral: true,
@@ -101,7 +112,27 @@ client.on('interactionCreate', async (interaction: Interaction) => {
                 })
                 return
             }
-            const gateMessage = await gateChannel?.messages.fetch(a.message);
+
+            let gateMessage
+            try {
+                gateMessage = await gateChannel?.messages.fetch(a.message)
+            } catch (e) {
+                if (e instanceof DiscordAPIError && e.message === 'Unknown Message') {
+                    interaction.reply({
+                        ephemeral: true,
+                        content: 'エラー: 無効なメッセージID'
+                    })
+                    return
+                }
+            }
+            if (!gateMessage) {
+                interaction.reply({
+                    ephemeral: true,
+                    content: 'エラー: 無効なメッセージ'
+                })
+                return
+            }
+
             await gateMessage.edit({
                 embeds: [gateEmbeds[gateName]]
             })
