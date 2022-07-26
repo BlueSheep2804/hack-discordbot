@@ -6,6 +6,9 @@ import * as fs from 'fs'
 
 import { Interaction, MessageActionRow, MessageButton } from "discord.js"
 const { Client, Intents } = require('discord.js')
+
+import { db_gate } from './db'
+
 const client = new Client({ intents: Object.keys(Intents.FLAGS) })
 
 const gateEmbeds: Record<string, Record<string, string>> = {}
@@ -80,11 +83,33 @@ client.on('interactionCreate', async (interaction: Interaction) => {
     if (interaction.commandName === 'gate') {
         const gateName = interaction.options.getString('ゲート名')
         if (!gateName) return
-        if (gateName in gateRoles) {
+        if (!(gateName in gateRoles)) {
             await interaction.reply({
                 ephemeral: true,
                 content: 'エラー: 無効なゲート名です'
             })
+            return
+        }
+
+        if (await db_gate.has(gateName)) {
+            const a = await db_gate.get(gateName);
+            const gateChannel = await interaction.guild?.channels.fetch(a.channel)
+            if (!gateChannel?.isText()) {
+                interaction.reply({
+                    ephemeral: true,
+                    content: 'エラー: 無効なチャンネル'
+                })
+                return
+            }
+            const gateMessage = await gateChannel?.messages.fetch(a.message);
+            await gateMessage.edit({
+                embeds: [gateEmbeds[gateName]]
+            })
+            await interaction.reply({
+                ephemeral: true,
+                content: '更新しました。'
+            })
+            return
         }
 
         const btn_give = new MessageButton()
@@ -97,12 +122,19 @@ client.on('interactionCreate', async (interaction: Interaction) => {
             .setStyle('SECONDARY')
             .setEmoji('📤')
             .setLabel('退出')
-        await interaction.channel?.send({
+        const gateEmbedMessage = await interaction.channel?.send({
             embeds: [gateEmbeds[gateName]],
             components: [
                 new MessageActionRow().addComponents(btn_give).addComponents(btn_take)
             ]
         })
+        await db_gate.set(
+            gateName,
+            {
+                message: gateEmbedMessage?.id,
+                channel: interaction.channelId
+            }
+        )
         await interaction.reply({
             ephemeral: true,
             content: '正常に投稿されました。'
