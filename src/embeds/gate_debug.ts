@@ -1,6 +1,6 @@
 export const role = '998167806623350785'
 
-export const gate = {
+export const embed = {
     title: 'デバッグ用',
     color: 0x2FA5E4,
     fields: [

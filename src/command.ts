@@ -6,39 +6,20 @@ import {
     ChatInputApplicationCommandData,
     ApplicationCommandOptionChoiceData
 } from 'discord.js';
-import * as fs from 'fs';
 
 import { db_gate } from './db';
+import { Gate } from './gate';
 
 interface ChatInputApplicationCommandDataWithFunction extends ChatInputApplicationCommandData {
     execute: Function
 };
 
 export class Command {
-    gateEmbeds: Record<string, Record<string, string>> = {};
-    gateRoles: Record<string, string> = {};
     commandList: ChatInputApplicationCommandDataWithFunction[] = [];
 
     constructor() {};
 
-    async generateGateList() {
-        const gateFiles = fs.readdirSync('./src/embeds').filter(file => file.startsWith('gate_') && (file.endsWith('.js') || file.endsWith('.ts')));
-        for (const file of gateFiles) {
-            const embed = await import(`./embeds/${file.split('.')[0]}`);
-            this.gateEmbeds[file.split('.')[0]] = embed.gate;
-            this.gateRoles[file.split('.')[0]] = embed.role;
-        };
-    };
-
-    generateCommandList() {
-        const gateOptions: ApplicationCommandOptionChoiceData[] = [];
-        for (const gateName in this.gateRoles) {
-            gateOptions.push({
-                name: gateName,
-                value: gateName
-            });
-        };
-
+    generateCommandList(gateOptions: ApplicationCommandOptionChoiceData[]) {
         this.commandList = [
             {
                 name: 'gate',
@@ -52,10 +33,10 @@ export class Command {
                         choices: gateOptions
                     }
                 ],
-                async execute(interaction: CommandInteraction, command: Command) {
+                async execute(interaction: CommandInteraction, gate: Gate) {
                     const gateName = interaction.options.getString('ゲート名')
                     if (!gateName) return
-                    if (!(gateName in command.gateRoles)) {
+                    if (!(gateName in gate.gateList)) {
                         await interaction.reply({
                             ephemeral: true,
                             content: 'エラー: 無効なゲート名です'
@@ -106,7 +87,7 @@ export class Command {
                         }
 
                         await gateMessage.edit({
-                            embeds: [command.gateEmbeds[gateName]]
+                            embeds: [gate.gateList[gateName].embed]
                         })
                         await interaction.reply({
                             ephemeral: true,
@@ -126,7 +107,7 @@ export class Command {
                         .setEmoji('📤')
                         .setLabel('退出')
                     const gateEmbedMessage = await interaction.channel?.send({
-                        embeds: [command.gateEmbeds[gateName]],
+                        embeds: [gate.gateList[gateName].embed],
                         components: [
                             new MessageActionRow().addComponents(btn_give).addComponents(btn_take)
                         ]
