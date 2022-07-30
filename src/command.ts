@@ -1,5 +1,4 @@
 import {
-    DiscordAPIError,
     MessageActionRow,
     MessageButton,
     CommandInteraction,
@@ -9,6 +8,7 @@ import {
 
 import { db_gate } from './db';
 import { Gate } from './gate';
+import { checkMessage, checkTextChannel } from './util';
 
 interface ChatInputApplicationCommandDataWithFunction extends ChatInputApplicationCommandData {
     execute: Function | Record<string, Function>
@@ -58,14 +58,7 @@ export class Command {
                     create: async (interaction: CommandInteraction, gate: Gate) => {
                         const gateName = interaction.options.getString('ゲート名')
                         if (!gateName) return
-                        if (!(gateName in gate.gateList)) {
-                            await interaction.reply({
-                                ephemeral: true,
-                                content: 'エラー: 無効なゲート名です'
-                            })
-                            return
-                        }
-
+                        if (!(await gate.checkExistGate(interaction))) return
                         if (await db_gate.has(gateName)) {
                             await interaction.reply({
                                 ephemeral: true,
@@ -105,14 +98,7 @@ export class Command {
                     update: async (interaction: CommandInteraction, gate: Gate) => {
                         const gateName = interaction.options.getString('ゲート名')
                         if (!gateName) return
-                        if (!(gateName in gate.gateList)) {
-                            await interaction.reply({
-                                ephemeral: true,
-                                content: 'エラー: 無効なゲート名です'
-                            })
-                            return
-                        }
-
+                        if (!(await gate.checkExistGate(interaction))) return
                         if (!(await db_gate.has(gateName))) {
                             interaction.reply({
                                 ephemeral: true,
@@ -120,47 +106,23 @@ export class Command {
                             })
                             return
                         }
+                        const gateInfo = await db_gate.get(gateName)
 
-                        const a = await db_gate.get(gateName);
-                        let gateChannel
-                        try {
-                            gateChannel = await interaction.guild?.channels.fetch(a.channel)
-                        } catch (e) {
-                            if (e instanceof DiscordAPIError && e.message === 'Unknown Channel') {
-                                interaction.reply({
-                                    ephemeral: true,
-                                    content: 'エラー: 無効なチャンネルID'
-                                })
-                                return
-                            }
-                        }
-                        if (!gateChannel?.isText()) {
-                            interaction.reply({
-                                ephemeral: true,
-                                content: 'エラー: 無効なチャンネル'
-                            })
-                            return
-                        }
+                        if (!interaction.guild?.channels) return
+                        const gateChannel = await checkTextChannel(
+                            interaction,
+                            gateInfo.channel,
+                            interaction.guild?.channels
+                        )
+                        if (!gateChannel) return
 
-                        let gateMessage
-                        try {
-                            gateMessage = await gateChannel?.messages.fetch(a.message)
-                        } catch (e) {
-                            if (e instanceof DiscordAPIError && e.message === 'Unknown Message') {
-                                interaction.reply({
-                                    ephemeral: true,
-                                    content: 'エラー: 無効なメッセージID'
-                                })
-                                return
-                            }
-                        }
-                        if (!gateMessage) {
-                            interaction.reply({
-                                ephemeral: true,
-                                content: 'エラー: 無効なメッセージ'
-                            })
-                            return
-                        }
+                        if (!gateChannel?.messages) return
+                        const gateMessage = await checkMessage(
+                            interaction,
+                            gateInfo.message,
+                            gateChannel?.messages
+                        )
+                        if (!gateMessage) return
 
                         await gateMessage.edit({
                             embeds: [gate.gateList[gateName].embed]
