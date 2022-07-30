@@ -65,7 +65,16 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         const invokedCommand = command.commandList.find(
             (v) => v.name === interaction.commandName
         )
-        await invokedCommand?.execute(interaction, gate)
+        console.log(typeof invokedCommand?.execute)
+        if (!invokedCommand?.execute) return
+        if (typeof invokedCommand?.execute === 'function') {
+            await invokedCommand?.execute(interaction, gate)
+        } else {
+            if (interaction.options.getSubcommand() in invokedCommand?.execute) {
+                const invokedSubCommand = invokedCommand?.execute[interaction.options.getSubcommand()]
+                await invokedSubCommand(interaction, gate)
+            }
+        }
     } catch (e) {
         console.log(e)
     }
