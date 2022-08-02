@@ -12,13 +12,13 @@ import { Gate } from './gate';
 import { checkMessage, checkTextChannel } from './util';
 
 interface ChatInputApplicationCommandDataWithFunction extends ChatInputApplicationCommandData {
-    execute: Function | Record<string, Function>
-};
+    execute: Function | Record<string, Function>;
+}
 
 export class Command {
     commandList: ChatInputApplicationCommandDataWithFunction[] = [];
 
-    constructor() {};
+    constructor() { }
 
     generateCommandList(gateOptions: ApplicationCommandOptionChoiceData[]) {
         const commandGateOption: ApplicationCommandChoicesData = {
@@ -72,129 +72,129 @@ export class Command {
                 ],
                 execute: {
                     create: async (interaction: CommandInteraction, gate: Gate) => {
-                        const gateName = interaction.options.getString('ゲート名')
-                        if (!gateName) return
-                        if (!(await gate.checkExistGate(interaction))) return
+                        const gateName = interaction.options.getString('ゲート名');
+                        if (!gateName) return;
+                        if (!(await gate.checkExistGate(interaction))) return;
                         if (await db_gate.has(gateName)) {
                             await interaction.reply({
                                 ephemeral: true,
                                 content: 'エラー: すでに対象のゲートが作成されています'
-                            })
-                            return
+                            });
+                            return;
                         }
 
                         const btn_give = new MessageButton()
                             .setCustomId(`btn_${gateName}_give`)
                             .setStyle('PRIMARY')
                             .setEmoji('📥')
-                            .setLabel('入室')
+                            .setLabel('入室');
                         const btn_take = new MessageButton()
                             .setCustomId(`btn_${gateName}_take`)
                             .setStyle('SECONDARY')
                             .setEmoji('📤')
-                            .setLabel('退出')
+                            .setLabel('退出');
                         const gateEmbedMessage = await interaction.channel?.send({
                             embeds: [gate.gateList[gateName].embed],
                             components: [
                                 new MessageActionRow().addComponents(btn_give).addComponents(btn_take)
                             ]
-                        })
+                        });
                         await db_gate.set(
                             gateName,
                             {
                                 message: gateEmbedMessage?.id,
                                 channel: interaction.channelId
                             }
-                        )
+                        );
                         await interaction.reply({
                             ephemeral: true,
                             content: '正常に投稿されました。'
-                        })    
+                        });
                     },
                     update: async (interaction: CommandInteraction, gate: Gate) => {
-                        const gateName = interaction.options.getString('ゲート名')
-                        if (!gateName) return
-                        if (!(await gate.checkExistGate(interaction))) return
+                        const gateName = interaction.options.getString('ゲート名');
+                        if (!gateName) return;
+                        if (!(await gate.checkExistGate(interaction))) return;
                         if (!(await db_gate.has(gateName))) {
                             interaction.reply({
                                 ephemeral: true,
                                 content: 'エラー: 対象のゲートが存在しません'
-                            })
-                            return
+                            });
+                            return;
                         }
-                        const gateInfo = await db_gate.get(gateName)
+                        const gateInfo = await db_gate.get(gateName);
 
-                        if (!interaction.guild?.channels) return
+                        if (!interaction.guild?.channels) return;
                         const gateChannel = await checkTextChannel(
                             interaction,
                             gateInfo.channel,
                             interaction.guild?.channels
-                        )
-                        if (!gateChannel) return
+                        );
+                        if (!gateChannel) return;
 
-                        if (!gateChannel?.messages) return
+                        if (!gateChannel?.messages) return;
                         const gateMessage = await checkMessage(
                             interaction,
                             gateInfo.message,
                             gateChannel?.messages
-                        )
-                        if (!gateMessage) return
+                        );
+                        if (!gateMessage) return;
 
                         await gateMessage.edit({
                             embeds: [gate.gateList[gateName].embed]
-                        })
+                        });
                         await interaction.reply({
                             ephemeral: true,
                             content: '更新しました。'
-                        })
+                        });
                     },
                     delete: async (interaction: CommandInteraction, gate: Gate) => {
-                        const gateName = interaction.options.getString('ゲート名')
-                        const shouldForcedDeletion = interaction.options.getString('DBのみ') === 'yes' ? true : false
-                        if (!gateName) return
-                        if (!(await gate.checkExistGate(interaction))) return
+                        const gateName = interaction.options.getString('ゲート名');
+                        const shouldForcedDeletion = interaction.options.getString('DBのみ') === 'yes' ? true : false;
+                        if (!gateName) return;
+                        if (!(await gate.checkExistGate(interaction))) return;
                         if (!(await db_gate.has(gateName))) {
                             interaction.reply({
                                 ephemeral: true,
                                 content: 'エラー: 対象のゲートが存在しません'
-                            })
-                            return
+                            });
+                            return;
                         }
-                        const gateInfo = await db_gate.get(gateName)
+                        const gateInfo = await db_gate.get(gateName);
 
                         if (shouldForcedDeletion) {
-                            await db_gate.delete(gateName)
+                            await db_gate.delete(gateName);
                             await interaction.reply({
                                 ephemeral: true,
                                 content: 'DBから正常に削除されました。'
-                            })        
+                            });
                         }
 
-                        if (!interaction.guild?.channels) return
+                        if (!interaction.guild?.channels) return;
                         const gateChannel = await checkTextChannel(
                             interaction,
                             gateInfo.channel,
                             interaction.guild?.channels
-                        )
-                        if (!gateChannel) return
+                        );
+                        if (!gateChannel) return;
 
-                        if (!gateChannel?.messages) return
+                        if (!gateChannel?.messages) return;
                         const gateMessage = await checkMessage(
                             interaction,
                             gateInfo.message,
                             gateChannel?.messages
-                        )
-                        if (!gateMessage) return
+                        );
+                        if (!gateMessage) return;
 
-                        await gateMessage.delete()
-                        await db_gate.delete(gateName)
+                        await gateMessage.delete();
+                        await db_gate.delete(gateName);
                         await interaction.reply({
                             ephemeral: true,
                             content: '正常に削除されました。'
-                        })
+                        });
                     }
                 }
             }
         ];
-    };
-};
+    }
+}

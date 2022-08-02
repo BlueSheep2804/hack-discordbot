@@ -21,15 +21,15 @@ export class Gate {
     }
 
     async checkExistGate(interaction: CommandInteraction) {
-        const gateName = interaction.options.getString('ゲート名')
-        if (!gateName) return false
+        const gateName = interaction.options.getString('ゲート名');
+        if (!gateName) return false;
         if (!(gateName in this.gateList)) {
             await interaction.reply({
                 ephemeral: true,
                 content: 'エラー: 無効なゲート名です'
-            })
-            return false
+            });
+            return false;
         }
-        return true
+        return true;
     }
 }

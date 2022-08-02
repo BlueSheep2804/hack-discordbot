@@ -1,4 +1,4 @@
-export const role = '998167806623350785'
+export const role = '998167806623350785';
 
 export const embed = {
     title: 'デバッグ用',
@@ -16,4 +16,4 @@ export const embed = {
     footer: {
         text: 'Developer: BlueSheep2804'
     }
-}
+};
