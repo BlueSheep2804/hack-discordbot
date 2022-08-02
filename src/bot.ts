@@ -1,13 +1,18 @@
-const dotenv = require('dotenv')
-
-dotenv.config()
-
-import { ApplicationCommandOptionChoiceData, Interaction } from "discord.js"
-const { Client, Intents } = require('discord.js')
+import * as dotenv from 'dotenv'
+import { Client, ApplicationCommandOptionChoiceData, Interaction } from "discord.js"
 import { Command } from "./command"
 import { Gate } from "./gate";
 
-const client = new Client({ intents: Object.keys(Intents.FLAGS) })
+dotenv.config()
+
+const client = new Client({
+    intents: [
+        'GUILDS',
+        'GUILD_MEMBERS',
+        'GUILD_MESSAGES',
+        'GUILD_MESSAGE_REACTIONS'
+    ]
+})
 
 const command = new Command()
 const gate = new Gate()
@@ -24,10 +29,10 @@ client.once("ready", async () => {
     console.log(gateOptions)
 
     command.generateCommandList(gateOptions)
-    await client.application.commands.set(command.commandList, '844175560044445716')
+    await client.application?.commands.set(command.commandList, '844175560044445716')
 
     console.log('/==============/')
-    console.log(client.user.tag)
+    console.log(client.user?.tag)
     console.log('/==============/')
 })
 
