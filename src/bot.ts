@@ -2,48 +2,29 @@ const dotenv = require('dotenv')
 
 dotenv.config()
 
-import * as fs from 'fs'
-
-import { DiscordAPIError, Interaction, MessageActionRow, MessageButton } from "discord.js"
+import { ApplicationCommandOptionChoiceData, Interaction } from "discord.js"
 const { Client, Intents } = require('discord.js')
-
-import { db_gate } from './db'
+import { Command } from "./command"
+import { Gate } from "./gate";
 
 const client = new Client({ intents: Object.keys(Intents.FLAGS) })
 
-const gateEmbeds: Record<string, Record<string, string>> = {}
-const gateRoles: Record<string, string> = {}
+const command = new Command()
+const gate = new Gate()
 
 client.once("ready", async () => {
-    const gateFiles = fs.readdirSync('./src/embeds').filter(file => file.startsWith('gate_') && (file.endsWith('.js') || file.endsWith('.ts')))
-    for (const file of gateFiles) {
-        const embed = await import(`./embeds/${file.split('.')[0]}`)
-        gateEmbeds[file.split('.')[0]] = embed.gate
-        gateRoles[file.split('.')[0]] = embed.role
-    }
+    await gate.generateGateList()
+    const gateOptions: ApplicationCommandOptionChoiceData[] = Object.keys(gate.gateList).map((value) => {
+        return {
+            name: value,
+            value: value
+        };
+    });
 
-    const gates: Record<string, string>[] = []
-    for (const gateName in gateRoles) {
-        gates.push({
-            name: gateName,
-            value: gateName
-        })
-    }
+    console.log(gateOptions)
 
-    const data = [{
-        name: 'gate',
-        description: 'チャンネルに入るためのゲートを作ります。管理者権限が必要です。',
-        options: [
-            {
-                type: 'STRING',
-                name: 'ゲート名',
-                description: '作成されるゲートを指定します',
-                required: true,
-                choices: gates
-            }
-        ]
-    }]
-    await client.application.commands.set(data, '844175560044445716')
+    command.generateCommandList(gateOptions)
+    await client.application.commands.set(command.commandList, '844175560044445716')
 
     console.log('/==============/')
     console.log(client.user.tag)
@@ -53,17 +34,17 @@ client.once("ready", async () => {
 client.on('interactionCreate', async (interaction: Interaction) => {
     if (interaction.isButton()) {
         if (Array.isArray(interaction.member?.roles)) return
-        for (const i in gateRoles) {
-            if (`btn_${i}_give` === interaction.customId) {
-                await interaction.member?.roles.add(gateRoles[i])
+        for (const gateName in gate.gateList) {
+            if (`btn_${gateName}_give` === interaction.customId) {
+                await interaction.member?.roles.add(gate.gateList[gateName].role)
                 await interaction.reply({
                     content: ':inbox_tray: 入室しました',
                     ephemeral: true
                 })
                 return
             }
-            if (`btn_${i}_take` === interaction.customId) {
-                await interaction.member?.roles.remove(gateRoles[i])
+            if (`btn_${gateName}_take` === interaction.customId) {
+                await interaction.member?.roles.remove(gate.gateList[gateName].role)
                 await interaction.reply({
                     content: ':outbox_tray: 退出しました',
                     ephemeral: true
@@ -80,96 +61,22 @@ client.on('interactionCreate', async (interaction: Interaction) => {
     if (!interaction.isCommand()) {
         return
     }
-    if (interaction.commandName === 'gate') {
-        const gateName = interaction.options.getString('ゲート名')
-        if (!gateName) return
-        if (!(gateName in gateRoles)) {
-            await interaction.reply({
-                ephemeral: true,
-                content: 'エラー: 無効なゲート名です'
-            })
-            return
-        }
-
-        if (await db_gate.has(gateName)) {
-            const a = await db_gate.get(gateName);
-            let gateChannel
-            try {
-                gateChannel = await interaction.guild?.channels.fetch(a.channel)
-            } catch (e) {
-                if (e instanceof DiscordAPIError && e.message === 'Unknown Channel') {
-                    interaction.reply({
-                        ephemeral: true,
-                        content: 'エラー: 無効なチャンネルID'
-                    })
-                    return
-                }
-            }
-            if (!gateChannel?.isText()) {
-                interaction.reply({
-                    ephemeral: true,
-                    content: 'エラー: 無効なチャンネル'
-                })
-                return
-            }
-
-            let gateMessage
-            try {
-                gateMessage = await gateChannel?.messages.fetch(a.message)
-            } catch (e) {
-                if (e instanceof DiscordAPIError && e.message === 'Unknown Message') {
-                    interaction.reply({
-                        ephemeral: true,
-                        content: 'エラー: 無効なメッセージID'
-                    })
-                    return
-                }
-            }
-            if (!gateMessage) {
-                interaction.reply({
-                    ephemeral: true,
-                    content: 'エラー: 無効なメッセージ'
-                })
-                return
-            }
-
-            await gateMessage.edit({
-                embeds: [gateEmbeds[gateName]]
-            })
-            await interaction.reply({
-                ephemeral: true,
-                content: '更新しました。'
-            })
-            return
-        }
-
-        const btn_give = new MessageButton()
-            .setCustomId(`btn_${gateName}_give`)
-            .setStyle('PRIMARY')
-            .setEmoji('📥')
-            .setLabel('入室')
-        const btn_take = new MessageButton()
-            .setCustomId(`btn_${gateName}_take`)
-            .setStyle('SECONDARY')
-            .setEmoji('📤')
-            .setLabel('退出')
-        const gateEmbedMessage = await interaction.channel?.send({
-            embeds: [gateEmbeds[gateName]],
-            components: [
-                new MessageActionRow().addComponents(btn_give).addComponents(btn_take)
-            ]
-        })
-        await db_gate.set(
-            gateName,
-            {
-                message: gateEmbedMessage?.id,
-                channel: interaction.channelId
-            }
+    try {
+        const invokedCommand = command.commandList.find(
+            (v) => v.name === interaction.commandName
         )
-        await interaction.reply({
-            ephemeral: true,
-            content: '正常に投稿されました。'
-        })
+        console.log(typeof invokedCommand?.execute)
+        if (!invokedCommand?.execute) return
+        if (typeof invokedCommand?.execute === 'function') {
+            await invokedCommand?.execute(interaction, gate)
+        } else {
+            if (interaction.options.getSubcommand() in invokedCommand?.execute) {
+                const invokedSubCommand = invokedCommand?.execute[interaction.options.getSubcommand()]
+                await invokedSubCommand(interaction, gate)
+            }
+        }
+    } catch (e) {
+        console.log(e)
     }
 })
 
