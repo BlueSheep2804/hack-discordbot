@@ -3,7 +3,8 @@ import {
     MessageButton,
     CommandInteraction,
     ChatInputApplicationCommandData,
-    ApplicationCommandOptionChoiceData
+    ApplicationCommandOptionChoiceData,
+    ApplicationCommandChoicesData
 } from 'discord.js';
 
 import { db_gate } from './db';
@@ -20,6 +21,14 @@ export class Command {
     constructor() {};
 
     generateCommandList(gateOptions: ApplicationCommandOptionChoiceData[]) {
+        const commandGateOption: ApplicationCommandChoicesData = {
+            type: 'STRING',
+            name: 'ゲート名',
+            description: '対象となるゲートを指定します',
+            required: true,
+            choices: gateOptions
+        };
+
         this.commandList = [
             {
                 name: 'gate',
@@ -29,27 +38,34 @@ export class Command {
                         type: 'SUB_COMMAND',
                         name: 'create',
                         description: 'チャンネルに入るためのゲートを作ります。管理者権限が必要です。',
-                        options: [
-                            {
-                                type: 'STRING',
-                                name: 'ゲート名',
-                                description: '対象となるゲートを指定します',
-                                required: true,
-                                choices: gateOptions
-                            }
-                        ]
+                        options: [commandGateOption]
                     },
                     {
                         type: 'SUB_COMMAND',
                         name: 'update',
                         description: '作成済みのゲートを更新します。管理者権限が必要です。',
+                        options: [commandGateOption]
+                    },
+                    {
+                        type: 'SUB_COMMAND',
+                        name: 'delete',
+                        description: '作成されたゲートを削除します。管理者権限が必要です。',
                         options: [
+                            commandGateOption,
                             {
                                 type: 'STRING',
-                                name: 'ゲート名',
-                                description: '対象となるゲートを指定します',
-                                required: true,
-                                choices: gateOptions
+                                name: 'dbのみ',
+                                description: 'メッセージの削除を行わず、データベースから削除します。',
+                                choices: [
+                                    {
+                                        name: 'Yes',
+                                        value: 'yes'
+                                    },
+                                    {
+                                        name: 'No',
+                                        value: 'no'
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -130,6 +146,51 @@ export class Command {
                         await interaction.reply({
                             ephemeral: true,
                             content: '更新しました。'
+                        })
+                    },
+                    delete: async (interaction: CommandInteraction, gate: Gate) => {
+                        const gateName = interaction.options.getString('ゲート名')
+                        const shouldForcedDeletion = interaction.options.getString('DBのみ') === 'yes' ? true : false
+                        if (!gateName) return
+                        if (!(await gate.checkExistGate(interaction))) return
+                        if (!(await db_gate.has(gateName))) {
+                            interaction.reply({
+                                ephemeral: true,
+                                content: 'エラー: 対象のゲートが存在しません'
+                            })
+                            return
+                        }
+                        const gateInfo = await db_gate.get(gateName)
+
+                        if (shouldForcedDeletion) {
+                            await db_gate.delete(gateName)
+                            await interaction.reply({
+                                ephemeral: true,
+                                content: 'DBから正常に削除されました。'
+                            })        
+                        }
+
+                        if (!interaction.guild?.channels) return
+                        const gateChannel = await checkTextChannel(
+                            interaction,
+                            gateInfo.channel,
+                            interaction.guild?.channels
+                        )
+                        if (!gateChannel) return
+
+                        if (!gateChannel?.messages) return
+                        const gateMessage = await checkMessage(
+                            interaction,
+                            gateInfo.message,
+                            gateChannel?.messages
+                        )
+                        if (!gateMessage) return
+
+                        await gateMessage.delete()
+                        await db_gate.delete(gateName)
+                        await interaction.reply({
+                            ephemeral: true,
+                            content: '正常に削除されました。'
                         })
                     }
                 }
