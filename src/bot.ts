@@ -29,7 +29,9 @@ client.once("ready", async () => {
     console.log(gateOptions);
 
     command.generateCommandList(gateOptions);
-    await client.application?.commands.set(command.commandList, '844175560044445716');
+    if (process.env.SERVER_ID) {
+        await client.application?.commands.set(command.commandList, process.env.SERVER_ID);
+    }
 
     console.log('/==============/');
     console.log(client.user?.tag);
