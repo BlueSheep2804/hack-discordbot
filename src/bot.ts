@@ -26,8 +26,6 @@ client.once("ready", async () => {
         };
     });
 
-    console.log(gateOptions);
-
     command.generateCommandList(gateOptions);
     if (process.env.SERVER_ID) {
         await client.application?.commands.set(command.commandList, process.env.SERVER_ID);
