@@ -3,6 +3,7 @@ module.exports = {
     format: '{type}{scope}: {subject}',
     list: [
         'chore',
+        'ci',
         'docs',
         'feat',
         'fix',
@@ -20,6 +21,11 @@ module.exports = {
             description: 'コード内容の変更を伴わない変更',
             emoji: '🤖',
             value: 'chore'
+        },
+        ci: {
+            description: 'CI関連の変更',
+            emoji: '🎡',
+            value: 'ci'
         },
         docs: {
             description: 'ドキュメントの更新など',
