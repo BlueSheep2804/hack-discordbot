@@ -1,6 +1,6 @@
 {
   "name": "hack-discordbot",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Hack is a Discord bot that makes various improvements.",
   "main": "index.js",
   "scripts": {
