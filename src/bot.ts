@@ -41,18 +41,35 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         if (Array.isArray(interaction.member?.roles)) return;
         for (const gateName in gate.gateList) {
             if (`btn_${gateName}_give` === interaction.customId) {
-                await interaction.member?.roles.add(gate.gateList[gateName].role);
-                await interaction.reply({
-                    content: ':inbox_tray: 入室しました',
-                    ephemeral: true
+                await interaction.member?.roles.add(gate.gateList[gateName].role)
+                .then(async () => {
+                    await interaction.reply({
+                        content: ':inbox_tray: 入室しました',
+                        ephemeral: true
+                    });
+                })
+                .catch(async () => {
+                    await interaction.reply({
+                        content: 'エラー: ロールの付与に失敗しました。\nサーバーの管理者に連絡してください。',
+                        ephemeral: true
+                    });
                 });
                 return;
             }
             if (`btn_${gateName}_take` === interaction.customId) {
-                await interaction.member?.roles.remove(gate.gateList[gateName].role);
-                await interaction.reply({
-                    content: ':outbox_tray: 退出しました',
-                    ephemeral: true
+                await interaction.member?.roles.remove(gate.gateList[gateName].role)
+                .then(async () => {
+                    await interaction.reply({
+                        content: ':outbox_tray: 退出しました',
+                        ephemeral: true
+                    });
+                })
+                .catch(async (e) => {
+                    console.log(e);
+                    await interaction.reply({
+                        content: 'エラー: ロールの剥奪に失敗しました。\nサーバーの管理者に連絡してください。',
+                        ephemeral: true
+                    });
                 });
                 return;
             }
